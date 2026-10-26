@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6b4f">
+<meta name="description" content="Practise S1 and S2 Mathematics, even without data.">
+<title>Phronesis Maths</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  :root {
+    --bg: #f6f4ee; --card: #ffffff; --ink: #18261f; --muted: #5a6a62; --line: #dfe4e0;
+    --brand: #0f6b4f; --brand-ink: #ffffff; --brand-soft: #e3f1ea; --accent: #f2b705;
+    --good: #16794c; --good-soft: #e2f4ea; --bad: #b42318; --bad-soft: #fde8e6; --warn-soft: #fff4d6;
+    --radius: 14px; --tap: 52px;
+    font-size: 17px;
+  }
+  html.large { font-size: 21px; }
+  html.contrast {
+    --bg: #000; --card: #000; --ink: #fff; --muted: #e6e6e6; --line: #fff;
+    --brand: #ffd400; --brand-ink: #000; --brand-soft: #222; --accent: #ffd400;
+    --good: #7dffb0; --good-soft: #002612; --bad: #ff8a80; --bad-soft: #2a0000; --warn-soft: #222;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+  button, input { font: inherit; color: inherit; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 16px 16px 120px; }
+  header.bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--brand); color: var(--brand-ink); position: sticky; top: 0; z-index: 5; }
+  header.bar h1 { font-size: 1.05rem; margin: 0; flex: 1; min-width: 0; font-weight: 700; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .iconbtn { background: transparent; border: 0; color: inherit; min-width: 44px; min-height: 44px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .iconbtn:focus-visible, .btn:focus-visible, .opt:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .pill { font-size: .78rem; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.18); white-space: nowrap; }
+  html.contrast .pill { background: #000; color: #ffd400; border: 1px solid #ffd400; }
+  h2 { font-size: 1.35rem; margin: 8px 0 4px; }
+  h3 { font-size: 1.05rem; margin: 20px 0 8px; }
+  p { margin: 6px 0; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 12px 0; }
+  .card.highlight { border: 2px solid var(--brand); background: var(--brand-soft); }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: var(--tap); padding: 12px 16px; border-radius: 12px; border: 2px solid var(--brand); background: var(--brand); color: var(--brand-ink); font-weight: 700; cursor: pointer; text-decoration: none; }
+  .btn.ghost { background: transparent; color: var(--brand); }
+  html.contrast .btn.ghost { color: #ffd400; }
+  .btn.small { width: auto; min-height: 44px; padding: 8px 14px; font-size: .92rem; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .stack > * + * { margin-top: 10px; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-height: var(--tap); margin: 8px 0; cursor: pointer; }
+  .item .grow { flex: 1; min-width: 0; }
+  .item .title { font-weight: 650; }
+  .item .sub { font-size: .85rem; color: var(--muted); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-weight: 800; flex: none; }
+  html.contrast .avatar { border: 2px solid #ffd400; color: #ffd400; }
+  .meter { display: block; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .meter > span { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
+  label { display: block; font-weight: 650; margin: 14px 0 6px; }
+  input[type=text], input[type=password], input[inputmode] { width: 100%; min-height: var(--tap); padding: 10px 14px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); font-size: 1.15rem; }
+  input.code { text-transform: uppercase; letter-spacing: 4px; font-weight: 700; text-align: center; }
+  input.pin { letter-spacing: 10px; text-align: center; font-weight: 700; }
+  .msg { padding: 10px 12px; border-radius: 10px; margin: 10px 0; font-size: .95rem; }
+  .msg.error { background: var(--bad-soft); color: var(--bad); }
+  .msg.info { background: var(--warn-soft); }
+  .q-head { display: flex; justify-content: space-between; align-items: center; font-size: .9rem; color: var(--muted); }
+  .progress { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 8px 0 16px; }
+  .progress > span { display: block; height: 100%; background: var(--accent); }
+  .prompt { font-size: 1.3rem; font-weight: 650; margin: 8px 0 16px; white-space: pre-wrap; }
+  .opt { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; min-height: var(--tap); padding: 12px 14px; margin: 8px 0; border-radius: 12px; border: 2px solid var(--line); background: var(--card); cursor: pointer; font-size: 1.1rem; }
+  .opt .key { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-weight: 800; flex: none; font-size: .9rem; }
+  .opt.chosen { border-color: var(--brand); }
+  .opt.right { border-color: var(--good); background: var(--good-soft); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+  .feedback { border-radius: 12px; padding: 14px; margin: 14px 0; }
+  .feedback.good { background: var(--good-soft); border: 2px solid var(--good); }
+  .feedback.bad { background: var(--bad-soft); border: 2px solid var(--bad); }
+  .feedback strong { display: block; font-size: 1.1rem; margin-bottom: 4px; }
+  .sticky-actions { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .sticky-actions .inner { max-width: 560px; margin: 0 auto; display: flex; gap: 10px; }
+  .score { font-size: 3rem; font-weight: 800; text-align: center; margin: 8px 0 0; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .stat b { display: block; font-size: 1.4rem; }
+  .stat span { font-size: .8rem; color: var(--muted); }
+  .toggle { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .toggle input { width: 26px; height: 26px; }
+  .tag { font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--warn-soft); }
+  .tag.done { background: var(--good-soft); color: var(--good); }
+  .center { text-align: center; }
+  .hidden { display: none !important; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--brand); border-radius: 50%; animation: spin 1s linear infinite; margin: 24px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <button class="iconbtn hidden" id="backBtn" aria-label="Back">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <h1 id="barTitle">Phronesis Maths</h1>
+  <span class="pill" id="syncPill" role="status" aria-live="polite">…</span>
+  <button class="iconbtn" id="settingsBtn" aria-label="Settings">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</header>
+<main class="wrap" id="app" tabindex="-1"><div class="spinner" aria-label="Loading"></div></main>
+<div id="actions"></div>
+
+<script src="/js/check.js"></script>
+<script>
+'use strict';
+/* ------------------------------------------------------------------ *
+ *  Storage (IndexedDB): profiles, bundles, queue, settings
+ * ------------------------------------------------------------------ */
+const DB_NAME = 'phronesis-maths';
+let dbp = null;
+function idb() {
+  if (dbp) return dbp;
+  dbp = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const d = req.result;
+      d.createObjectStore('profiles', { keyPath: 'id' });
+      d.createObjectStore('bundles', { keyPath: 'learnerId' });
+      d.createObjectStore('queue', { keyPath: 'id' });
+      d.createObjectStore('settings', { keyPath: 'key' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbp;
+}
+async function store(name, mode, fn) {
+  const d = await idb();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(name, mode);
+    const s = tx.objectStore(name);
+    const r = fn(s);
+    tx.oncomplete = () => resolve(r && 'result' in r ? r.result : undefined);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+const db = {
+  get: (n, k) => store(n, 'readonly', (s) => s.get(k)),
+  all: (n) => store(n, 'readonly', (s) => s.getAll()),
+  put: (n, v) => store(n, 'readwrite', (s) => s.put(v)),
+  del: (n, k) => store(n, 'readwrite', (s) => s.delete(k)),
+};
+
+/* ------------------------------------------------------------------ *
+ *  Helpers
+ * ------------------------------------------------------------------ */
+const $ = (sel) => document.querySelector(sel);
+const app = $('#app');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const dayKey = (d) => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth() + 1}-${x.getDate()}`; };
+
+async function api(path, opts = {}, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch('/api' + path, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* empty */ }
+  if (!res.ok) { const err = new Error(data.error || 'Something went wrong.'); err.status = res.status; throw err; }
+  return data;
+}
+
+let backHandler = null;
+function setBar(title, onBack) {
+  $('#barTitle').textContent = title || 'Phronesis Maths';
+  backHandler = onBack || null;
+  $('#backBtn').classList.toggle('hidden', !onBack);
+}
+$('#backBtn').onclick = () => backHandler && backHandler();
+function setActions(html) { $('#actions').innerHTML = html ? `<div class="sticky-actions"><div class="inner">${html}</div></div>` : ''; }
+let screen = '';
+function render(html, title, onBack) {
+  screen = '';
+  stopSpeaking();
+  setBar(title, onBack);
+  setActions('');
+  app.innerHTML = html;
+  window.scrollTo(0, 0);
+  app.focus({ preventScroll: true });
+}
+
+/* ------------------------------------------------------------------ *
+ *  Settings: text size, contrast
+ * ------------------------------------------------------------------ */
+const settings = { large: false, contrast: false };
+async function loadSettings() {
+  for (const k of Object.keys(settings)) {
+    const v = await db.get('settings', k);
+    if (v) settings[k] = v.value;
+  }
+  applySettings();
+}
+function applySettings() {
+  document.documentElement.classList.toggle('large', settings.large);
+  document.documentElement.classList.toggle('contrast', settings.contrast);
+}
+async function setSetting(k, v) { settings[k] = v; applySettings(); await db.put('settings', { key: k, value: v }); }
+
+/* ------------------------------------------------------------------ *
+ *  Read-aloud
+ * ------------------------------------------------------------------ */
+const canSpeak = 'speechSynthesis' in window;
+function spoken(text) {
+  return String(text)
+    .replace(/([0-9A-Za-z]+)₂/g, '$1 base two').replace(/([0-9A-Za-z]+)₃/g, '$1 base three').replace(/([0-9A-Za-z]+)₄/g, '$1 base four')
+    .replace(/([0-9A-Za-z]+)₅/g, '$1 base five').replace(/([0-9A-Za-z]+)₈/g, '$1 base eight')
+    .replace(/(\d)\s*\/\s*(\d)/g, '$1 over $2')
+    .replace(/−|-(?=\d)/g, ' minus ').replace(/×/g, ' times ').replace(/÷/g, ' divided by ')
+    .replace(/²/g, ' squared').replace(/³/g, ' cubed').replace(/ⁿ/g, ' to the power n').replace(/√/g, ' square root of ')
+    .replace(/∩/g, ' intersection ').replace(/∪/g, ' union ').replace(/′/g, ' complement').replace(/∅/g, ' empty set ')
+    .replace(/%/g, ' percent').replace(/°C/g, ' degrees Celsius').replace(/°/g, ' degrees')
+    .replace(/\{ \}/g, ' empty set ').replace(/[{}]/g, ' ').replace(/UGX/g, ' shillings').replace(/…/g, ' and so on')
+    .replace(/(\d):(\d)/g, '$1 to $2').replace(/ : /g, ' to ');
+}
+function speak(text) {
+  if (!canSpeak) return;
+  stopSpeaking();
+  const u = new SpeechSynthesisUtterance(spoken(text));
+  u.lang = 'en-GB';
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+function stopSpeaking() { if (canSpeak) speechSynthesis.cancel(); }
+const speakBtn = (id) => canSpeak ? `<button class="btn ghost small" id="${id}" type="button" aria-label="Read aloud">🔊 Read aloud</button>` : '';
+
+/* ------------------------------------------------------------------ *
+ *  Sync: answers wait in the queue until there is a connection
+ * ------------------------------------------------------------------ */
+let syncing = false;
+async function queueCount() { return (await db.all('queue')).length; }
+async function updatePill() {
+  const n = await queueCount();
+  const pill = $('#syncPill');
+  if (!navigator.onLine) pill.textContent = n ? `Offline · ${n} saved` : 'Offline';
+  else pill.textContent = n ? `${n} to send` : 'Up to date';
+}
+async function syncAll() {
+  if (syncing || !navigator.onLine) { updatePill(); return; }
+  syncing = true;
+  try {
+    const items = await db.all('queue');
+    const byLearner = {};
+    for (const it of items) (byLearner[it.learnerId] = byLearner[it.learnerId] || []).push(it);
+    for (const [learnerId, list] of Object.entries(byLearner)) {
+      const profile = await db.get('profiles', Number(learnerId));
+      if (!profile || profile.needsLogin) continue;
+      for (let i = 0; i < list.length; i += 300) {
+        const chunk = list.slice(i, i + 300);
+        try {
+          const res = await api('/learner/sync', { method: 'POST', body: {
+            runs: chunk.filter((x) => x.kind === 'run').map((x) => x.data),
+            attempts: chunk.filter((x) => x.kind === 'attempt').map((x) => x.data),
+          } }, profile.token);
+          const ok = new Set([...res.accepted.runs, ...res.accepted.attempts]);
+          for (const it of chunk) if (ok.has(it.data.id)) await db.del('queue', it.id);
+        } catch (e) {
+          if (e.status === 401) { profile.needsLogin = true; await db.put('profiles', profile); }
+          break;
+        }
+      }
+      await refreshBundle(profile).catch(() => {});
+    }
+  } finally {
+    syncing = false;
+    updatePill();
+  }
+}
+async function refreshBundle(profile) {
+  if (!navigator.onLine || profile.needsLogin) return null;
+  const bundle = await api('/learner/bundle', {}, profile.token);
+  bundle.learnerId = profile.id;
+  bundle.fetchedAt = Date.now();
+  await db.put('bundles', bundle);
+  return bundle;
+}
+window.addEventListener('online', syncAll);
+window.addEventListener('offline', updatePill);
+setInterval(() => { if (document.visibilityState === 'visible') syncAll(); }, 60000);
+
+/* ------------------------------------------------------------------ *
+ *  Progress: server numbers plus anything still waiting to be sent
+ * ------------------------------------------------------------------ */
+async function learnerState(profile) {
+  const bundle = await db.get('bundles', profile.id);
+  const queued = (await db.all('queue')).filter((x) => x.learnerId === profile.id);
+  const byTopic = {};
+  for (const p of bundle.progress) byTopic[p.topic] = { answers: p.answers, correct: p.correct };
+  const seen = Object.assign({}, bundle.seen);
+  const runs = bundle.runs.slice();
+  const runIds = new Set(runs.map((r) => r.id));
+  for (const it of queued) {
+    if (it.kind === 'attempt') {
+      const a = it.data;
+      const t = (byTopic[a.topic] = byTopic[a.topic] || { answers: 0, correct: 0 });
+      t.answers += 1; t.correct += a.correct ? 1 : 0;
+      const s = (seen[a.questionId] = seen[a.questionId] || { n: 0 });
+      s.n += 1; s.lastCorrect = a.correct;
+    } else if (!runIds.has(it.data.id)) {
+      runs.unshift({ id: it.data.id, mode: it.data.mode, topic: it.data.topic, score: it.data.score, total: it.data.total, completed_at: it.data.completedAt });
+    }
+  }
+  const done = new Set(runs.filter((r) => r.mode === 'assignment').map((r) => r.assignmentId));
+  const queuedAssign = new Set(queued.filter((x) => x.kind === 'run' && x.data.assignmentId).map((x) => Number(x.data.assignmentId)));
+  const assignments = bundle.assignments.map((a) => ({ ...a, done: a.done || queuedAssign.has(a.id) || done.has(a.id) }));
+  const baselineDone = runs.some((r) => r.mode === 'baseline');
+  const endlineDone = runs.some((r) => r.mode === 'endline');
+  // Streak: consecutive days (ending today or yesterday) with at least one finished quiz.
+  const days = new Set(runs.map((r) => dayKey(r.completed_at)));
+  let streak = 0;
+  const d = new Date();
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  while (days.has(dayKey(d))) { streak++; d.setDate(d.getDate() - 1); }
+  const lastScore = {};
+  for (const r of runs) if (r.topic && !(r.topic in lastScore) && (r.mode === 'practice' || r.mode === 'assignment')) lastScore[r.topic] = r;
+  const mastered = bundle.topics.filter((t) => { const s = byTopic[t.id]; return s && s.answers >= 8 && s.correct / s.answers >= 0.8; }).length;
+  return { bundle, byTopic, seen, runs, assignments, baselineDone, endlineDone, streak, lastScore, mastered };
+}
+
+/* ------------------------------------------------------------------ *
+ *  Screens
+ * ------------------------------------------------------------------ */
+let current = null; // current profile
+
+async function showProfiles() {
+  current = null;
+  const profiles = (await db.all('profiles')).sort((a, b) => a.firstName.localeCompare(b.firstName));
+  if (!profiles.length) return showJoin();
+  render(`
+    <h2>Who is learning?</h2>
+    <p class="muted">Pick your name. Several learners can share this phone.</p>
+    <ul class="list">${profiles.map((p) => `
+      <li><button class="item" data-id="${p.id}">
+        <span class="avatar">${esc(p.firstName[0] || '?').toUpperCase()}</span>
+        <span class="grow"><span class="title">${esc(p.firstName)}</span><br><span class="sub">${esc(p.className)} · ${esc(p.level)}</span></span>
+        <span aria-hidden="true">›</span>
+      </button></li>`).join('')}
+    </ul>
+    <button class="btn ghost" id="joinBtn">+ Add another learner</button>
+  `);
+  app.querySelectorAll('[data-id]').forEach((b) => (b.onclick = () => openProfile(Number(b.dataset.id))));
+  $('#joinBtn').onclick = () => showJoin(true);
+}
+
+async function openProfile(id) {
+  const profile = await db.get('profiles', id);
+  if (!profile) return showProfiles();
+  if (profile.needsLogin) return showPin(profile.code, { id: profile.id, first_name: profile.firstName, has_pin: true }, true);
+  // Ask for the PIN when switching between learners on a shared phone.
+  if (profile.locked) return showUnlock(profile);
+  current = profile;
+  showHome();
+}
+
+function showUnlock(profile) {
+  render(`
+    <h2>Hello, ${esc(profile.firstName)}</h2>
+    <p class="muted">Enter your 4-digit PIN.</p>
+    <input class="pin" id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="PIN">
+    <div id="err"></div>
+    <p class="muted" style="font-size:.9rem">Forgot your PIN? Ask your teacher to reset it.</p>
+  `, profile.firstName, showProfiles);
+  setActions('<button class="btn" id="go">Continue</button>');
+  const go = async () => {
+    const pin = $('#pin').value.trim();
+    const bundle = await db.get('bundles', profile.id);
+    // Offline-friendly check: compare against a salted hash saved at login.
+    if (profile.pinCheck && profile.pinCheck === (await pinHash(pin, profile.id))) {
+      current = profile;
+      return showHome();
+    }
+    if (!bundle || !profile.pinCheck) return showPin(profile.code, { id: profile.id, first_name: profile.firstName, has_pin: true }, true);
+    $('#err').innerHTML = '<div class="msg error">Wrong PIN. Try again.</div>';
+  };
+  $('#go').onclick = go;
+  $('#pin').onkeydown = (e) => { if (e.key === 'Enter') go(); };
+  $('#pin').focus();
+}
+
+async function pinHash(pin, id) {
+  const data = new TextEncoder().encode(`pm-pin:${id}:${pin}`);
+  if (crypto.subtle) {
+    const h = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(h)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  }
+  return null;
+}
+
+function showJoin(canGoBack) {
+  render(`
+    <h2>Join your class</h2>
+    <p class="muted">Type the class code your teacher gave you. You need data or Wi-Fi for this step only.</p>
+    <label for="code">Class code</label>
+    <input class="code" id="code" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123">
+    <div id="err"></div>
+  `, 'Join a class', canGoBack ? showProfiles : null);
+  setActions('<button class="btn" id="next">Next</button>');
+  const next = async () => {
+    const code = $('#code').value.trim().toUpperCase();
+    if (code.length < 6) { $('#err').innerHTML = '<div class="msg error">The code has 6 letters and numbers.</div>'; return; }
+    if (!navigator.onLine) { $('#err').innerHTML = '<div class="msg error">You are offline. Joining needs data or Wi-Fi once.</div>'; return; }
+    $('#next').disabled = true;
+    try {
+      const data = await api('/class/' + encodeURIComponent(code));
+      showNames(code, data);
+    } catch (e) {
+      $('#err').innerHTML = `<div class="msg error">${esc(e.message)}</div>`;
+      $('#next').disabled = false;
+    }
+  };
+  $('#next').onclick = next;
+  $('#code').onkeydown = (e) => { if (e.key === 'Enter') next(); };
+  $('#code').focus();
+}
+
+function showNames(code, data) {
+  render(`
+    <p class="muted">${esc(data.class.school)}</p>
+    <h2>${esc(data.class.name)} (${esc(data.class.level)})</h2>
+    <p>Tap your name.</p>
+    <ul class="list">${data.learners.map((l) => `
+      <li><button class="item" data-id="${l.id}">
+        <span class="avatar">${esc(l.first_name[0] || '?').toUpperCase()}</span>
+        <span class="grow title">${esc(l.first_name)}</span>
+        ${l.has_pin ? '' : '<span class="tag">New</span>'}
+      </button></li>`).join('') || '<p class="muted">Your teacher has not added any names yet.</p>'}
+    </ul>
+    <p class="muted" style="font-size:.9rem">Name missing? Ask your teacher to add you.</p>
+  `, 'Join a class', () => showJoin(true));
+  app.querySelectorAll('[data-id]').forEach((b) => (b.onclick = () => {
+    const l = data.learners.find((x) => x.id === Number(b.dataset.id));
+    showPin(code, l, false);
+  }));
+}
+
+function showPin(code, learner, relogin) {
+  const isNew = !learner.has_pin;
+  render(`
+    <h2>${isNew ? 'Choose a PIN' : 'Enter your PIN'}</h2>
+    <p class="muted">${isNew
+      ? `Hello ${esc(learner.first_name)}! Choose 4 numbers you will remember. Keep them secret.`
+      : `Hello ${esc(learner.first_name)}. Type your 4-digit PIN.`}</p>
+    <label for="pin">PIN</label>
+    <input class="pin" id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+    ${isNew ? '<label for="pin2">Type it again</label><input class="pin" id="pin2" type="password" inputmode="numeric" maxlength="4" autocomplete="off">' : ''}
+    <div id="err"></div>
+    ${isNew ? '' : '<p class="muted" style="font-size:.9rem">Forgot it? Ask your teacher to reset your PIN.</p>'}
+  `, relogin ? 'Sign in again' : 'Join a class', relogin ? showProfiles : () => showJoin(true));
+  setActions('<button class="btn" id="go">Start learning</button>');
+  const err = (m) => ($('#err').innerHTML = `<div class="msg error">${esc(m)}</div>`);
+  const go = async () => {
+    const pin = $('#pin').value.trim();
+    if (!/^\d{4}$/.test(pin)) return err('Your PIN must be exactly 4 numbers.');
+    if (isNew && pin !== $('#pin2').value.trim()) return err('The two PINs are different. Try again.');
+    if (!navigator.onLine) return err('You are offline. Signing in needs data or Wi-Fi once.');
+    $('#go').disabled = true;
+    try {
+      const res = await api('/learner/login', { method: 'POST', body: { code, learnerId: learner.id, pin } });
+      const profile = {
+        id: res.learner.id, firstName: res.learner.firstName, className: res.learner.className,
+        level: res.learner.level, code: res.learner.code, token: res.token, pinCheck: await pinHash(pin, res.learner.id),
+      };
+      await db.put('profiles', profile);
+      $('#go').textContent = 'Downloading questions…';
+      await refreshBundle(profile);
+      current = profile;
+      syncAll();
+      showHome();
+    } catch (e) {
+      err(e.message);
+      $('#go').disabled = false;
+      $('#go').textContent = 'Start learning';
+    }
+  };
+  $('#go').onclick = go;
+  $('#pin').focus();
+}
+
+async function showHome() {
+  const p = current;
+  const st = await learnerState(p);
+  const { bundle } = st;
+  const assessCount = bundle.questions.filter((q) => q.assessment).length;
+  const pending = st.assignments.filter((a) => !a.done);
+  const topicName = (id) => (bundle.topics.find((t) => t.id === id) || {}).name || id;
+  const due = (a) => a.due_date ? `Due ${new Date(a.due_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}` : 'From your teacher';
+
+  let html = `<h2>Hello, ${esc(p.firstName)}</h2><p class="muted">${esc(p.className)} · ${esc(p.level)} Mathematics</p>`;
+
+  if (!st.baselineDone && assessCount) {
+    html += `<div class="card highlight"><h3 style="margin-top:0">Start here: your starting test</h3>
+      <p>${assessCount} questions to see what you know now. Do your best on your own, with no help. You will see your score at the end.</p>
+      <button class="btn" id="baseline">Start the test</button></div>`;
+  } else if (bundle.endlineOpen && !st.endlineDone && assessCount) {
+    html += `<div class="card highlight"><h3 style="margin-top:0">Your end-of-term test is open</h3>
+      <p>${assessCount} questions, the same kind as your starting test. Let's see how much you have grown!</p>
+      <button class="btn" id="endline">Start the test</button></div>`;
+  }
+
+  html += `<div class="stats">
+      <div class="stat"><b>${st.streak}</b><span>day streak</span></div>
+      <div class="stat"><b>${st.mastered}</b><span>topics mastered</span></div>
+      <div class="stat"><b>${st.runs.filter((r) => r.mode !== 'baseline' && r.mode !== 'endline').length}</b><span>quizzes done</span></div>
+    </div>`;
+
+  if (pending.length) {
+    html += `<h3>From your teacher</h3><ul class="list">${pending.map((a) => `
+      <li><button class="item" data-assign="${a.id}" data-topic="${esc(a.topic)}">
+        <span class="grow"><span class="title">${esc(topicName(a.topic))}</span><br><span class="sub">${esc(due(a))}</span></span>
+        <span class="tag">To do</span></button></li>`).join('')}</ul>`;
+  }
+
+  html += `<h3>Practise a topic</h3><ul class="list">${bundle.topics.map((t) => {
+    const s = st.byTopic[t.id];
+    const pct = s && s.answers ? Math.round((s.correct / s.answers) * 100) : null;
+    const last = st.lastScore[t.id];
+    const n = bundle.questions.filter((q) => q.topic === t.id).length;
+    return `<li><button class="item" data-topic="${esc(t.id)}" ${n ? '' : 'disabled'}>
+      <span class="grow"><span class="title">${esc(t.name)}</span><br>
+        <span class="sub">${pct === null ? `${n} questions · not started` : `${pct}% correct${last ? ` · last quiz ${last.score}/${last.total}` : ''}`}</span>
+        <span class="meter" aria-hidden="true"><span style="width:${pct || 0}%"></span></span></span>
+      ${pct !== null && s.answers >= 8 && pct >= 80 ? '<span class="tag done">Mastered</span>' : ''}
+      </button></li>`;
+  }).join('')}</ul>`;
+
+  if (st.baselineDone || st.endlineDone) {
+    const b = st.runs.find((r) => r.mode === 'baseline');
+    const e = st.runs.find((r) => r.mode === 'endline');
+    html += `<div class="card"><b>Your tests</b>
+      <p>Starting test: ${b ? `${b.score}/${b.total}` : '—'}${e ? ` · End-of-term test: ${e.score}/${e.total}` : ''}</p></div>`;
+  }
+  const offlineNote = bundle.fetchedAt ? `Questions saved on this phone ${new Date(bundle.fetchedAt).toLocaleDateString()}.` : '';
+  html += `<p class="muted center" style="font-size:.85rem;margin-top:24px">${offlineNote} Works without data.</p>`;
+
+  render(html, p.firstName, (await db.all('profiles')).length > 1 ? () => switchLearner() : null);
+  screen = 'home';
+  // Pick up new assignments or questions in the background when online.
+  if (navigator.onLine && Date.now() - (bundle.fetchedAt || 0) > 5 * 60 * 1000) {
+    refreshBundle(p)
+      .then((b) => { if (b && screen === 'home' && current === p) showHome(); })
+      .catch(async (e) => { if (e.status === 401) { p.needsLogin = true; await db.put('profiles', p); } });
+  }
+  const b1 = $('#baseline'); if (b1) b1.onclick = () => startQuiz({ mode: 'baseline' });
+  const b2 = $('#endline'); if (b2) b2.onclick = () => startQuiz({ mode: 'endline' });
+  app.querySelectorAll('[data-assign]').forEach((b) => (b.onclick = () => startQuiz({ mode: 'assignment', topic: b.dataset.topic, assignmentId: Number(b.dataset.assign) })));
+  app.querySelectorAll('[data-topic]:not([data-assign])').forEach((b) => (b.onclick = () => startQuiz({ mode: 'practice', topic: b.dataset.topic })));
+}
+
+// Leaving a learner locks their profile, so the next learner on a shared phone can't use it.
+async function switchLearner() {
+  if (current) { current.locked = true; await db.put('profiles', current); }
+  showProfiles();
+}
+
+/* ------------------------------------------------------------------ *
+ *  Quiz
+ * ------------------------------------------------------------------ */
+const QUIZ_LENGTH = 10;
+let quiz = null;
+
+async function startQuiz(opts) {
+  const st = await learnerState(current);
+  const { bundle } = st;
+  let questions;
+  if (opts.mode === 'baseline' || opts.mode === 'endline') {
+    questions = bundle.questions.filter((q) => q.assessment).sort((a, b) => a.id - b.id);
+  } else {
+    // Unseen questions first, then ones answered wrong last time, then the rest.
+    const pool = shuffle(bundle.questions.filter((q) => q.topic === opts.topic));
+    const rank = (q) => { const s = st.seen[q.id]; return !s ? 0 : s.lastCorrect === false ? 1 : 2; };
+    questions = pool.sort((a, b) => rank(a) - rank(b)).slice(0, QUIZ_LENGTH);
+  }
+  if (!questions.length) return showHome();
+  quiz = { ...opts, runId: uuid(), startedAt: new Date().toISOString(), questions, index: 0, score: 0, answers: [] };
+  showQuestion();
+}
+
+function isTest() { return quiz.mode === 'baseline' || quiz.mode === 'endline'; }
+
+function quizTitle() {
+  if (quiz.mode === 'baseline') return 'Starting test';
+  if (quiz.mode === 'endline') return 'End-of-term test';
+  const t = (quizBundleTopics.find((x) => x.id === quiz.topic) || {});
+  return t.name || 'Practice';
+}
+let quizBundleTopics = [];
+
+async function showQuestion() {
+  const bundle = await db.get('bundles', current.id);
+  quizBundleTopics = bundle.topics;
+  const q = quiz.questions[quiz.index];
+  const n = quiz.questions.length;
+  const options = q.type === 'mcq' ? q.options.map((o, i) => ({ text: o, i })) : [];
+  render(`
+    <div class="q-head"><span>Question ${quiz.index + 1} of ${n}</span>${speakBtn('speak')}</div>
+    <div class="progress" aria-hidden="true"><span style="width:${(quiz.index / n) * 100}%"></span></div>
+    <div class="prompt" id="prompt">${esc(q.prompt)}</div>
+    ${q.type === 'mcq'
+      ? options.map((o) => `<button class="opt" data-i="${o.i}" type="button"><span class="key">${'ABCD'[o.i]}</span><span>${esc(o.text)}</span></button>`).join('')
+      : `<label for="ans">Your answer</label><input id="ans" type="text" inputmode="text" autocomplete="off" autocorrect="off" spellcheck="false">
+         <p class="muted" style="font-size:.85rem">Numbers only is fine, e.g. 23000 or −6 or 3/4.</p>`}
+    <div id="fb" aria-live="polite"></div>
+  `, quizTitle(), confirmLeave);
+  setActions('<button class="btn" id="check" disabled>Check</button>');
+
+  let chosen = null;
+  if (q.type === 'mcq') {
+    app.querySelectorAll('.opt').forEach((b) => (b.onclick = () => {
+      if (b.disabled) return;
+      app.querySelectorAll('.opt').forEach((x) => x.classList.remove('chosen'));
+      b.classList.add('chosen');
+      chosen = Number(b.dataset.i);
+      $('#check').disabled = false;
+    }));
+  } else {
+    const input = $('#ans');
+    input.oninput = () => ($('#check').disabled = !input.value.trim());
+    input.onkeydown = (e) => { if (e.key === 'Enter' && input.value.trim()) $('#check').click(); };
+    input.focus();
+  }
+  const sp = $('#speak');
+  if (sp) sp.onclick = () => speak(q.prompt + (q.type === 'mcq' ? '. ' + q.options.map((o, i) => `${'ABCD'[i]}: ${o}`).join('. ') : ''));
+
+  $('#check').onclick = async () => {
+    const given = q.type === 'mcq' ? String(chosen) : $('#ans').value.trim();
+    const correct = q.type === 'mcq' ? chosen === Number(q.answer) : AnswerCheck.isCorrect(given, q.answer);
+    if (correct) quiz.score++;
+    const shownAnswer = q.type === 'mcq' ? q.options[chosen] : given;
+    quiz.answers.push({ q, correct, given: shownAnswer });
+    await db.put('queue', { id: uuid(), learnerId: current.id, kind: 'attempt', data: {
+      id: uuid(), runId: quiz.runId, questionId: q.id, topic: q.topic, mode: quiz.mode, correct,
+      answer: shownAnswer, answeredAt: new Date().toISOString(),
+    } });
+    updatePill();
+    const last = quiz.index === n - 1;
+    if (isTest()) { // No feedback during a test, so it measures fairly.
+      return nextQuestion();
+    }
+    app.querySelectorAll('.opt').forEach((b) => {
+      b.disabled = true;
+      const i = Number(b.dataset.i);
+      if (i === Number(q.answer)) b.classList.add('right');
+      else if (i === chosen) b.classList.add('wrong');
+    });
+    if ($('#ans')) $('#ans').disabled = true;
+    const rightText = q.type === 'mcq' ? q.options[Number(q.answer)] : String(q.answer).split('|')[0];
+    $('#fb').innerHTML = `<div class="feedback ${correct ? 'good' : 'bad'}">
+      <strong>${correct ? 'Correct!' : `Not quite. The answer is ${esc(rightText)}.`}</strong>
+      <span id="expl">${esc(q.explanation)}</span>
+      <div style="margin-top:8px">${speakBtn('speakExp')}</div></div>`;
+    const se = $('#speakExp');
+    if (se) se.onclick = () => speak((correct ? 'Correct. ' : `Not quite. The answer is ${rightText}. `) + q.explanation);
+    setActions(`<button class="btn" id="next">${last ? 'See my score' : 'Next question'}</button>`);
+    $('#next').onclick = nextQuestion;
+    $('#fb').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+}
+
+async function nextQuestion() {
+  if (quiz.index < quiz.questions.length - 1) { quiz.index++; return showQuestion(); }
+  await db.put('queue', { id: uuid(), learnerId: current.id, kind: 'run', data: {
+    id: quiz.runId, mode: quiz.mode, topic: quiz.topic || null, assignmentId: quiz.assignmentId || null,
+    score: quiz.score, total: quiz.questions.length, startedAt: quiz.startedAt, completedAt: new Date().toISOString(),
+  } });
+  syncAll();
+  showResult();
+}
+
+function confirmLeave() {
+  if (isTest()) {
+    if (!confirm('Leave the test? Your answers so far are kept, but you will need to start the test again.')) return;
+  } else if (quiz.index > 0 && !confirm('Leave this quiz? Your answers so far are saved.')) return;
+  showHome();
+}
+
+function showResult() {
+  const n = quiz.questions.length;
+  const pct = Math.round((quiz.score / n) * 100);
+  const msg = pct >= 80 ? 'Excellent work!' : pct >= 50 ? 'Good effort. Keep practising!' : 'Keep going — every try makes you stronger.';
+  const wrong = quiz.answers.filter((a) => !a.correct);
+  render(`
+    <p class="center muted">${esc(quizTitle())}</p>
+    <div class="score">${quiz.score}/${n}</div>
+    <p class="center"><b>${msg}</b></p>
+    ${isTest() ? '<p class="center muted">Your teacher will use this to see how the class is doing.</p>' : ''}
+    ${wrong.length ? `<h3>Look again at these</h3>${wrong.map((a) => `
+      <div class="card"><p><b>${esc(a.q.prompt)}</b></p>
+      <p class="muted">You said: ${esc(a.given)}</p>
+      <p>Answer: <b>${esc(a.q.type === 'mcq' ? a.q.options[Number(a.q.answer)] : String(a.q.answer).split('|')[0])}</b></p>
+      <p>${esc(a.q.explanation)}</p></div>`).join('')}` : ''}
+  `, 'Your score', showHome);
+  const again = quiz.mode === 'practice' || quiz.mode === 'assignment';
+  setActions(`${again ? '<button class="btn ghost" id="again">Practise again</button>' : ''}<button class="btn" id="home">Done</button>`);
+  if (again) { const opts = { mode: 'practice', topic: quiz.topic }; $('#again').onclick = () => startQuiz(opts); }
+  $('#home').onclick = showHome;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Settings screen
+ * ------------------------------------------------------------------ */
+async function showSettings() {
+  const back = current ? showHome : showProfiles;
+  render(`
+    <h2>Settings</h2>
+    <div class="toggle"><span><b>Large text</b><br><span class="muted">Bigger words and buttons</span></span><input type="checkbox" id="large" ${settings.large ? 'checked' : ''}></div>
+    <div class="toggle"><span><b>High contrast</b><br><span class="muted">Yellow on black, easier to see</span></span><input type="checkbox" id="contrast" ${settings.contrast ? 'checked' : ''}></div>
+    <div class="toggle"><span><b>Read aloud</b><br><span class="muted">${canSpeak ? 'Tap 🔊 on any question' : 'This phone cannot read aloud'}</span></span>${speakBtn('testSpeak')}</div>
+    ${current ? `<h3>${esc(current.firstName)}</h3>
+      <div class="stack">
+        <button class="btn ghost" id="switch">Switch learner</button>
+        <button class="btn ghost" id="sync">Send my answers now</button>
+        <button class="btn ghost" id="remove">Remove ${esc(current.firstName)} from this phone</button>
+      </div>` : ''}
+    <p class="muted center" style="font-size:.85rem;margin-top:24px">Phronesis Maths · only your first name and answers are stored.</p>
+  `, 'Settings', back);
+  $('#large').onchange = (e) => setSetting('large', e.target.checked);
+  $('#contrast').onchange = (e) => setSetting('contrast', e.target.checked);
+  const t = $('#testSpeak'); if (t) t.onclick = () => speak('Hello! I can read questions to you. Two plus three equals five.');
+  if (current) {
+    $('#switch').onclick = switchLearner;
+    $('#sync').onclick = async () => { await syncAll(); const n = await queueCount(); alert(n ? `${n} answers are still waiting for a connection.` : 'All your answers are sent.'); };
+    $('#remove').onclick = async () => {
+      const waiting = (await db.all('queue')).filter((x) => x.learnerId === current.id).length;
+      if (!confirm(waiting ? `${waiting} answers have not been sent yet and will be lost. Remove anyway?` : `Remove ${current.firstName} from this phone? Progress stays saved online.`)) return;
+      for (const it of (await db.all('queue')).filter((x) => x.learnerId === current.id)) await db.del('queue', it.id);
+      await db.del('bundles', current.id);
+      await db.del('profiles', current.id);
+      showProfiles();
+    };
+  }
+}
+$('#settingsBtn').onclick = showSettings;
+
+/* ------------------------------------------------------------------ *
+ *  Start
+ * ------------------------------------------------------------------ */
+(async function start() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  try {
+    await loadSettings();
+    // Lock everyone when the app opens, so a shared phone always asks "who is learning?"
+    const profiles = await db.all('profiles');
+    for (const p of profiles) if (!p.locked) { p.locked = true; await db.put('profiles', p); }
+    updatePill();
+    syncAll();
+    if (profiles.length === 1 && profiles[0].pinCheck) return showUnlock(profiles[0]);
+    showProfiles();
+  } catch (e) {
+    app.innerHTML = `<div class="msg error">This phone's browser could not save data (${esc(e.message)}). Try Chrome, and make sure you are not in private mode.</div>`;
+  }
+})();
+</script>
+</body>
+</html>

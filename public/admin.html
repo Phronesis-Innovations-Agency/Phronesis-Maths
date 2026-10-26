@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f6b4f">
+<meta name="robots" content="noindex">
+<title>Admin · Phronesis Maths</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/staff.css">
+</head>
+<body>
+<header class="bar">
+  <h1>Phronesis Maths · Admin</h1>
+  <button id="logout" class="hidden">Sign out</button>
+</header>
+<main class="wrap" id="app"></main>
+
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+const app = $('#app');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pct = (v) => (v === null || v === undefined ? '—' : v + '%');
+let token = null;
+try { token = sessionStorage.getItem('pm-admin-token'); } catch (e) { /* ignore */ }
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path !== '/admin/login') { signOut(); throw new Error('Please sign in again.'); }
+  if (!res.ok) { const e = new Error(data.error || 'Something went wrong.'); e.details = data.details; throw e; }
+  return data;
+}
+function signOut() { token = null; try { sessionStorage.removeItem('pm-admin-token'); } catch (e) { /* ignore */ } showLogin(); }
+$('#logout').onclick = signOut;
+
+function showLogin(msg) {
+  $('#logout').classList.add('hidden');
+  app.innerHTML = `<div class="card login"><h2>Admin sign in</h2>
+    <form id="f"><label for="pw">Admin password</label><input id="pw" type="password" autocomplete="current-password" required>
+    <div id="err">${msg ? `<div class="msg error">${esc(msg)}</div>` : ''}</div>
+    <p><button class="btn" style="width:100%">Sign in</button></p></form></div>`;
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      token = (await api('/admin/login', { method: 'POST', body: { password: $('#pw').value } })).token;
+      try { sessionStorage.setItem('pm-admin-token', token); } catch (e2) { /* ignore */ }
+      showTab('metrics');
+    } catch (err) { $('#err').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+}
+
+const TABS = { metrics: 'Pilot numbers', schools: 'Schools & teachers', questions: 'Question bank' };
+function shell(active) {
+  $('#logout').classList.remove('hidden');
+  app.innerHTML = `<nav class="tabs">${Object.entries(TABS).map(([k, v]) =>
+    `<button data-tab="${k}" class="${k === active ? 'on' : ''}">${v}</button>`).join('')}</nav><div id="tab"></div>`;
+  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
+  return $('#tab');
+}
+function showTab(k) {
+  const el = shell(k);
+  ({ metrics: showMetrics, schools: showSchools, questions: showQuestions })[k](el).catch((e) => (el.innerHTML = `<div class="msg error">${esc(e.message)}</div>`));
+}
+
+/* ---------------- Pilot numbers ---------------- */
+async function showMetrics(el) {
+  const m = await api('/admin/metrics');
+  const t = m.totals;
+  // A full 30-day row ending today (Kampala time), with empty days shown as gaps.
+  const byDay = Object.fromEntries(m.daily.map((d) => [d.day, d]));
+  const end = new Date(m.today + 'T12:00:00Z');
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(end); d.setUTCDate(d.getUTCDate() - (29 - i));
+    const key = d.toISOString().slice(0, 10);
+    return byDay[key] || { day: key, learners: 0, answers: 0 };
+  });
+  const maxL = Math.max(1, ...days.map((d) => d.learners));
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const gain = t.paired_learners ? t.paired_endline_avg - t.paired_baseline_avg : null;
+  el.innerHTML = `
+    <h2>Pilot numbers</h2>
+    <p class="muted">Live from the database. These are the traction figures for the fellowship application.</p>
+    <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <div class="tile"><b>${t.schools}</b><span>schools (${t.schools_with_consent} with signed letter)</span></div>
+      <div class="tile"><b>${t.teachers}</b><span>teachers</span></div>
+      <div class="tile"><b>${t.enrolled}</b><span>learners enrolled</span></div>
+      <div class="tile"><b>${t.joined}</b><span>learners joined</span></div>
+      <div class="tile"><b>${t.weekly_active}</b><span>active in last 7 days${t.joined ? ` (${Math.round((t.weekly_active / t.joined) * 100)}% of joined)` : ''}</span></div>
+      <div class="tile"><b>${t.quizzes}</b><span>quizzes completed</span></div>
+      <div class="tile"><b>${t.answers}</b><span>questions answered</span></div>
+      <div class="tile"><b>${t.teachers_assigning_this_week}</b><span>teachers assigning this week</span></div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><h3>Learning gain</h3>
+        ${t.paired_learners
+          ? `<p><b>${plural(t.paired_learners, 'learner', 'learners')}</b> took both tests. Average <b>${t.paired_baseline_avg}%</b> → <b>${t.paired_endline_avg}%</b>, a change of <b>${gain >= 0 ? '+' : ''}${gain} points</b>.</p>`
+          : `<p>No learner has taken both tests yet.</p>`}
+        <p class="muted">Starting test: ${plural(t.baseline_takers, 'learner', 'learners')}, average ${pct(t.baseline_avg)}. End-of-term test: ${plural(t.endline_takers, 'learner', 'learners')}${t.endline_takers ? `, average ${pct(t.endline_avg)}` : ''}.</p>
+      </div>
+      <div class="card"><h3>Active learners per day, last 30 days</h3>
+        ${m.daily.length ? `<div class="spark" role="img" aria-label="Daily active learners over the last 30 days">${days.map((d) =>
+          `<span title="${esc(d.day)}: ${plural(d.learners, 'learner', 'learners')}, ${d.answers} answers" style="height:${(d.learners / maxL) * 100}%${d.learners ? '' : ';background:var(--line)'}"></span>`).join('')}</div>
+          <p class="muted" style="font-size:.85rem">${esc(days[0].day)} to ${esc(days[29].day)} · busiest day ${plural(maxL, 'learner', 'learners')}</p>`
+          : '<p class="muted">No activity yet.</p>'}
+      </div>
+    </div>
+    <div class="card"><h3>By school</h3><div class="table-wrap"><table>
+      <thead><tr><th>School</th><th>Letter</th><th class="num">Enrolled</th><th class="num">Active 7 days</th><th class="num">Quizzes</th><th class="num">Start avg</th><th class="num">End avg</th><th class="num">Both tests</th></tr></thead>
+      <tbody>${m.schools.map((s) => `<tr><td>${esc(s.name)}${s.district ? ` <span class="muted">· ${esc(s.district)}</span>` : ''}</td>
+        <td>${s.consent_on_file ? '<span class="tag good">Signed</span>' : '<span class="tag mid">Missing</span>'}</td>
+        <td class="num">${s.enrolled}</td><td class="num">${s.weekly_active}</td><td class="num">${s.quizzes}</td>
+        <td class="num">${pct(s.baseline_avg)}</td><td class="num">${pct(s.endline_avg)}</td><td class="num">${s.paired_learners}</td></tr>`).join('')
+        || '<tr><td colspan="8" class="muted">No schools yet.</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ---------------- Schools & teachers ---------------- */
+async function showSchools(el) {
+  const schools = await api('/admin/schools');
+  el.innerHTML = `
+    <h2>Schools & teachers</h2>
+    <div class="card"><h3>Add a school</h3>
+      <form id="sf"><div class="row">
+        <div><label for="sname">School name</label><input id="sname" type="text" required></div>
+        <div><label for="sdist">District</label><input id="sdist" type="text"></div>
+        <div><label for="scn">Contact person</label><input id="scn" type="text"></div>
+        <div><label for="scp">Contact phone</label><input id="scp" type="text"></div>
+      </div>
+      <label style="font-weight:400"><input type="checkbox" id="scons"> Signed pilot and consent letter is on file</label>
+      <p><button class="btn">Add school</button></p></form><div id="sErr"></div>
+    </div>
+    ${schools.map((s) => `<div class="card">
+      <div class="row" style="align-items:center"><div><h3 style="margin:0">${esc(s.name)}</h3>
+        <span class="muted">${esc([s.district, s.contact_name, s.contact_phone].filter(Boolean).join(' · ') || 'No contact details')}</span></div>
+        <label style="flex:none;font-weight:400"><input type="checkbox" data-consent="${s.id}" ${s.consent_on_file ? 'checked' : ''}> Signed letter on file</label></div>
+      <div style="margin-top:10px">${s.teachers.map((t) => `<div class="list-item"><span><b>${esc(t.name)}</b> <span class="muted">${esc(t.email)}</span></span>
+        <button class="btn ghost small" data-resetpw="${t.id}" data-name="${esc(t.name)}">Reset password</button></div>`).join('') || '<p class="muted">No teachers yet.</p>'}</div>
+      <form class="row" data-teacher="${s.id}" style="margin-top:8px">
+        <div><label>Teacher name</label><input name="name" type="text" required></div>
+        <div><label>Email</label><input name="email" type="email" required></div>
+        <button class="btn">Add teacher</button>
+      </form><div data-out="${s.id}"></div>
+    </div>`).join('')}`;
+
+  $('#sf').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api('/admin/schools', { method: 'POST', body: { name: $('#sname').value, district: $('#sdist').value,
+        contact_name: $('#scn').value, contact_phone: $('#scp').value, consent_on_file: $('#scons').checked } });
+      showTab('schools');
+    } catch (err) { $('#sErr').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+  el.querySelectorAll('[data-consent]').forEach((cb) => (cb.onchange = () =>
+    api('/admin/schools/' + cb.dataset.consent, { method: 'PATCH', body: { consent_on_file: cb.checked } })));
+  el.querySelectorAll('[data-teacher]').forEach((f) => (f.onsubmit = async (e) => {
+    e.preventDefault();
+    const out = el.querySelector(`[data-out="${f.dataset.teacher}"]`);
+    try {
+      const t = await api('/admin/teachers', { method: 'POST', body: { school_id: Number(f.dataset.teacher), name: f.querySelector('[name=name]').value, email: f.querySelector('[name=email]').value } });
+      await showSchools(el);
+      el.querySelector(`[data-out="${f.dataset.teacher}"]`).innerHTML = passwordNote(t.name, t.email, t.tempPassword);
+    } catch (err) { out.innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  }));
+  el.querySelectorAll('[data-resetpw]').forEach((b) => (b.onclick = async () => {
+    if (!confirm(`Give ${b.dataset.name} a new temporary password?`)) return;
+    const r = await api(`/admin/teachers/${b.dataset.resetpw}/reset-password`, { method: 'POST' });
+    b.closest('.list-item').insertAdjacentHTML('afterend', passwordNote(b.dataset.name, '', r.tempPassword));
+  }));
+}
+function passwordNote(name, email, pw) {
+  return `<div class="msg ok">Give ${esc(name)} this temporary password: <b style="font-family:monospace;font-size:1.1rem">${esc(pw)}</b>
+    ${email ? ` (sign in at <b>${esc(location.origin)}/teacher</b> with ${esc(email)})` : ''}. It is shown only once — they can change it after signing in.</div>`;
+}
+
+/* ---------------- Question bank ---------------- */
+async function showQuestions(el, topicFilter) {
+  const topics = await api('/admin/topics');
+  const topic = topicFilter || '';
+  const qs = await api('/admin/questions' + (topic ? '?topic=' + encodeURIComponent(topic) : ''));
+  const name = (id) => (topics.find((t) => t.id === id) || {}).name || id;
+  el.innerHTML = `
+    <h2>Question bank</h2>
+    <div class="card"><h3>Topics</h3><div class="table-wrap"><table>
+      <thead><tr><th>Topic</th><th>Level</th><th>CSV topic id</th><th class="num">Active questions</th><th class="num">In tests</th></tr></thead>
+      <tbody>${topics.map((t) => `<tr><td>${esc(t.name)}</td><td>${t.level}</td><td><code>${esc(t.id)}</code></td>
+        <td class="num">${t.active_questions}</td><td class="num">${t.assessment_questions}</td></tr>`).join('')}</tbody></table></div>
+      <p class="muted" style="font-size:.85rem">Changing which questions are in the starting/end-of-term test after learners have taken it makes the scores harder to compare. Fix it before the pilot starts.</p>
+    </div>
+    <div class="card"><h3>Import questions from a spreadsheet</h3>
+      <p class="muted">Teachers can write questions in Excel or Google Sheets using the template, then save as CSV. Rows with an existing <code>ref</code> are updated; new refs are added. Nothing is imported if any row has a problem.</p>
+      <p><button class="btn ghost small" id="tpl">Download CSV template</button></p>
+      <label for="csvfile">Choose a CSV file</label><input id="csvfile" type="file" accept=".csv,text/csv">
+      <p><button class="btn" id="imp" disabled>Import</button></p><div id="impOut"></div>
+    </div>
+    <div class="card"><div class="row" style="align-items:center"><h3 style="margin:0">${qs.length} questions</h3>
+      <div style="max-width:320px"><select id="tf"><option value="">All topics</option>${topics.map((t) =>
+        `<option value="${esc(t.id)}" ${t.id === topic ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div></div>
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead><tr><th>Ref</th><th>Question</th><th>Answer</th><th class="num">Answered</th><th class="num">% correct</th><th>In tests</th><th>Active</th></tr></thead>
+        <tbody>${qs.map((q) => `<tr>
+          <td><code>${esc(q.ref)}</code><br><span class="muted" style="font-size:.8rem">${esc(name(q.topic_id))}</span></td>
+          <td class="wrap">${esc(q.prompt)}${q.type === 'mcq' ? `<br><span class="muted" style="font-size:.8rem">${(q.options || []).map((o, i) => `${'ABCD'[i]}) ${esc(o)}`).join(' · ')}</span>` : ''}</td>
+          <td>${esc(q.type === 'mcq' ? 'ABCD'[Number(q.answer)] + ') ' + (q.options || [])[Number(q.answer)] : q.answer.split('|')[0])}</td>
+          <td class="num">${q.answered}</td><td class="num">${pct(q.pct_correct)}</td>
+          <td><input type="checkbox" data-q="${q.id}" data-k="assessment" ${q.assessment ? 'checked' : ''} aria-label="In tests"></td>
+          <td><input type="checkbox" data-q="${q.id}" data-k="active" ${q.active ? 'checked' : ''} aria-label="Active"></td>
+        </tr>`).join('')}</tbody></table></div>
+      <p class="muted" style="font-size:.85rem">A question most learners get wrong may be badly worded — check it.</p>
+    </div>`;
+
+  $('#tf').onchange = () => showQuestions(el, $('#tf').value);
+  el.querySelectorAll('[data-q]').forEach((cb) => (cb.onchange = () =>
+    api('/admin/questions/' + cb.dataset.q, { method: 'PATCH', body: { [cb.dataset.k]: cb.checked } }).catch((e) => alert(e.message))));
+  $('#tpl').onclick = async () => {
+    const res = await fetch('/api/admin/questions/template.csv', { headers: { Authorization: 'Bearer ' + token } });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await res.blob());
+    a.download = 'question-template.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('#csvfile').onchange = () => ($('#imp').disabled = !$('#csvfile').files.length);
+  $('#imp').onclick = async () => {
+    const file = $('#csvfile').files[0];
+    if (!file) return;
+    try {
+      const r = await api('/admin/questions/import', { method: 'POST', body: { csv: await file.text() } });
+      await showQuestions(el, topic);
+      $('#impOut').innerHTML = `<div class="msg ok">Imported ${r.imported} question(s).</div>`;
+    } catch (err) {
+      $('#impOut').innerHTML = `<div class="msg error">${esc(err.message)}${err.details ? '<ul>' + err.details.map((d) => `<li>${esc(d)}</li>`).join('') + '</ul>' : ''}</div>`;
+    }
+  };
+}
+
+token ? showTab('metrics') : showLogin();
+</script>
+</body>
+</html>

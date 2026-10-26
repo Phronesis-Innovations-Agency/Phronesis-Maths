@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f6b4f">
+<title>Teacher dashboard · Phronesis Maths</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/staff.css">
+</head>
+<body>
+<header class="bar">
+  <h1>Phronesis Maths · Teacher</h1>
+  <span id="who"></span>
+  <button id="logout" class="hidden">Sign out</button>
+</header>
+<main class="wrap" id="app"></main>
+
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+const app = $('#app');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pct = (v) => (v === null || v === undefined ? '—' : v + '%');
+const day = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '—');
+let token = null;
+try { token = localStorage.getItem('pm-teacher-token'); } catch (e) { /* storage blocked */ }
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path !== '/teacher/login') { signOut(); throw new Error('Please sign in again.'); }
+  if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+  return data;
+}
+function signOut() {
+  token = null;
+  try { localStorage.removeItem('pm-teacher-token'); } catch (e) { /* ignore */ }
+  showLogin();
+}
+$('#logout').onclick = signOut;
+const tone = (v) => (v === null ? '' : v >= 70 ? 'good' : v >= 50 ? 'mid' : 'bad');
+const toneColor = (v) => (v === null ? 'transparent' : v >= 70 ? 'var(--good)' : v >= 50 ? 'var(--mid)' : 'var(--bad)');
+
+function showLogin(msg) {
+  $('#logout').classList.add('hidden');
+  $('#who').textContent = '';
+  app.innerHTML = `
+    <div class="card login">
+      <h2>Teacher sign in</h2>
+      <p class="muted">Use the email and password Phronesis gave you.</p>
+      <form id="f">
+        <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+        <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+        <div id="err">${msg ? `<div class="msg error">${esc(msg)}</div>` : ''}</div>
+        <p><button class="btn" style="width:100%">Sign in</button></p>
+      </form>
+    </div>`;
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const r = await api('/teacher/login', { method: 'POST', body: { email: $('#email').value, password: $('#pw').value } });
+      token = r.token;
+      try { localStorage.setItem('pm-teacher-token', token); } catch (e2) { /* ignore */ }
+      showClasses();
+    } catch (err) { $('#err').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+}
+
+async function showClasses() {
+  const [me, classes] = await Promise.all([api('/teacher/me'), api('/teacher/classes')]);
+  $('#who').textContent = `${me.name} · ${me.school}`;
+  $('#logout').classList.remove('hidden');
+  app.innerHTML = `
+    <h2>Your classes</h2>
+    <div class="card">
+      ${classes.length ? classes.map((c) => `
+        <div class="list-item">
+          <div><b>${esc(c.name)}</b> <span class="tag">${esc(c.level)}</span><br>
+            <span class="muted">${c.learners} learners · code <b>${esc(c.code)}</b></span></div>
+          <button class="btn small" data-open="${c.id}">Open</button>
+        </div>`).join('') : '<p class="muted">No classes yet. Create your first one below.</p>'}
+    </div>
+    <div class="card">
+      <h3>Create a class</h3>
+      <form id="nc" class="row">
+        <div><label for="cname">Class name</label><input id="cname" type="text" placeholder="e.g. S1 East" required maxlength="60"></div>
+        <div style="max-width:140px"><label for="clevel">Level</label>
+          <select id="clevel"><option value="S1">S1</option><option value="S2">S2</option></select></div>
+        <button class="btn">Create</button>
+      </form>
+      <div id="ncErr"></div>
+    </div>
+    <details class="card"><summary><b>Change your password</b></summary>
+      <form id="pwf" class="row" style="margin-top:8px">
+        <div><label for="cur">Current password</label><input id="cur" type="password" autocomplete="current-password" required></div>
+        <div><label for="nxt">New password (8+ characters)</label><input id="nxt" type="password" autocomplete="new-password" minlength="8" required></div>
+        <button class="btn">Save</button>
+      </form><div id="pwMsg"></div>
+    </details>`;
+  app.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => showClass(Number(b.dataset.open))));
+  $('#nc').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const c = await api('/teacher/classes', { method: 'POST', body: { name: $('#cname').value, level: $('#clevel').value } });
+      showClass(c.id);
+    } catch (err) { $('#ncErr').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+  $('#pwf').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api('/teacher/password', { method: 'POST', body: { current: $('#cur').value, next: $('#nxt').value } });
+      $('#pwMsg').innerHTML = '<div class="msg ok">Password changed.</div>';
+      $('#pwf').reset();
+    } catch (err) { $('#pwMsg').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+}
+
+async function showClass(id) {
+  const [d, topics] = await Promise.all([api('/teacher/classes/' + id), api('/teacher/topics')]);
+  const c = d.class, s = d.summary;
+  const levelTopics = topics.filter((t) => t.level <= c.level);
+  const weakFirst = [...d.heatmap].sort((a, b) => (a.pct ?? 101) - (b.pct ?? 101));
+  const gain = s.paired_learners ? s.paired_endline_avg - s.paired_baseline_avg : null;
+  app.innerHTML = `
+    <p><button class="btn ghost small" id="back">← All classes</button></p>
+    <div class="row" style="align-items:center">
+      <div><h2 style="margin:0">${esc(c.name)} <span class="tag">${esc(c.level)}</span></h2><span class="muted">${esc(c.school)}</span></div>
+      <div style="flex:none;text-align:right"><span class="muted" style="font-size:.85rem">Class code for learners</span><div class="code">${esc(c.code)}</div></div>
+    </div>
+
+    <div class="tiles" style="margin-top:14px">
+      <div class="tile"><b>${s.enrolled}</b><span>learners added</span></div>
+      <div class="tile"><b>${s.joined}</b><span>have joined</span></div>
+      <div class="tile"><b>${s.weekly_active}</b><span>active in last 7 days</span></div>
+      <div class="tile"><b>${s.quizzes}</b><span>quizzes completed</span></div>
+      <div class="tile"><b>${s.answers}</b><span>questions answered</span></div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <h3>Topics, weakest first</h3>
+        <p class="muted" style="margin-top:-6px;font-size:.85rem">Percent of answers correct across the class. Assign the red ones.</p>
+        <div class="heat">${weakFirst.map((t) => `
+          <span>${esc(t.name)}${t.answers ? '' : ' <span class="muted">(not started)</span>'}</span>
+          <span class="bar"><span style="width:${t.pct || 0}%;background:${toneColor(t.pct)}"></span></span>
+          <span class="val">${pct(t.pct)}</span>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <h3>Starting test and end-of-term test</h3>
+        ${s.paired_learners
+          ? `<p><b>${s.paired_learners}</b> ${s.paired_learners === 1 ? 'learner' : 'learners'} took both tests. Average <b>${s.paired_baseline_avg}%</b> → <b>${s.paired_endline_avg}%</b>
+             (<b>${gain >= 0 ? '+' : ''}${gain} points</b>).</p>`
+          : `<p>Starting test: <b>${s.baseline_takers}</b> of ${s.enrolled} learners${s.baseline_avg !== null ? `, average <b>${s.baseline_avg}%</b>` : ''}.</p>
+             <p>End-of-term test: <b>${s.endline_takers}</b> learners${s.endline_avg !== null ? `, average <b>${s.endline_avg}%</b>` : ''}.</p>`}
+        <p class="muted" style="font-size:.85rem">Learners take the starting test when they first join. Open the end-of-term test when the pilot ends.</p>
+        <button class="btn ${c.endlineOpen ? 'ghost' : ''}" id="endline">${c.endlineOpen ? 'Close the end-of-term test' : 'Open the end-of-term test'}</button>
+        <h3 style="margin-top:18px">Reports for your head teacher</h3>
+        <button class="btn ghost" data-report="pdf">Download PDF</button>
+        <button class="btn ghost" data-report="csv">Download CSV</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Assign a topic</h3>
+      <form id="af" class="row">
+        <div><label for="atopic">Topic</label><select id="atopic">${levelTopics.map((t) => `<option value="${esc(t.id)}">${esc(t.name)} (${t.level})</option>`).join('')}</select></div>
+        <div style="max-width:200px"><label for="adue">Due date (optional)</label><input id="adue" type="date"></div>
+        <button class="btn">Assign</button>
+      </form>
+      <div id="aErr"></div>
+      ${d.assignments.length ? `<div class="table-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Topic</th><th>Due</th><th class="num">Completed</th><th></th></tr></thead>
+        <tbody>${d.assignments.map((a) => `<tr><td>${esc(a.topic)}</td><td>${day(a.due_date)}</td>
+          <td class="num">${a.completed} / ${s.enrolled}</td>
+          <td class="num"><button class="btn danger small" data-unassign="${a.id}">Remove</button></td></tr>`).join('')}</tbody>
+      </table></div>` : ''}
+    </div>
+
+    <div class="card">
+      <h3>Learners</h3>
+      ${d.learners.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Joined</th><th class="num">Quizzes</th><th class="num">% correct</th><th class="num">Start test</th><th class="num">End test</th><th>Last active</th><th></th></tr></thead>
+        <tbody>${d.learners.map((l) => `<tr>
+          <td><b>${esc(l.first_name)}</b></td>
+          <td>${l.joined ? '<span class="tag good">Yes</span>' : '<span class="tag">Not yet</span>'}</td>
+          <td class="num">${l.quizzes}</td>
+          <td class="num">${l.pct === null ? '—' : `<span class="tag ${tone(l.pct)}">${l.pct}%</span>`}</td>
+          <td class="num">${pct(l.baseline)}</td><td class="num">${pct(l.endline)}</td>
+          <td>${day(l.last_active)}</td>
+          <td class="num">${l.joined ? `<button class="btn ghost small" data-reset="${l.id}" data-name="${esc(l.first_name)}">Reset PIN</button>` : ''}
+            <button class="btn danger small" data-del="${l.id}" data-name="${esc(l.first_name)}">Remove</button></td>
+        </tr>`).join('')}</tbody></table></div>` : '<p class="muted">No learners yet. Add their first names below.</p>'}
+      <form id="lf" style="margin-top:12px">
+        <label for="names">Add learners — one first name per line</label>
+        <textarea id="names" placeholder="Sarah&#10;Brian&#10;Aisha N."></textarea>
+        <p class="muted" style="font-size:.85rem">Only first names are stored. If two learners share a name, add an initial (e.g. Brian K.).</p>
+        <button class="btn">Add learners</button>
+      </form>
+      <div id="lMsg"></div>
+    </div>`;
+
+  $('#back').onclick = showClasses;
+  // Download with the sign-in token in a header (never in the link).
+  app.querySelectorAll('[data-report]').forEach((b) => (b.onclick = async () => {
+    const kind = b.dataset.report;
+    b.disabled = true;
+    try {
+      const res = await fetch(`/api/teacher/classes/${c.id}/report.${kind}`, { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) throw new Error('Could not make the report.');
+      const blob = await res.blob();
+      const name = (res.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name ? name[1] : `report.${kind}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (err) { alert(err.message); }
+    b.disabled = false;
+  }));
+  $('#endline').onclick = async () => {
+    const open = !c.endlineOpen;
+    if (open && !confirm('Open the end-of-term test for this class? Learners will see it next time they are online.')) return;
+    await api(`/teacher/classes/${c.id}/endline`, { method: 'POST', body: { open } });
+    showClass(c.id);
+  };
+  $('#af').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api(`/teacher/classes/${c.id}/assignments`, { method: 'POST', body: { topic: $('#atopic').value, due: $('#adue').value } });
+      showClass(c.id);
+    } catch (err) { $('#aErr').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+  app.querySelectorAll('[data-unassign]').forEach((b) => (b.onclick = async () => {
+    await api(`/teacher/classes/${c.id}/assignments/${b.dataset.unassign}`, { method: 'DELETE' });
+    showClass(c.id);
+  }));
+  app.querySelectorAll('[data-reset]').forEach((b) => (b.onclick = async () => {
+    if (!confirm(`Reset ${b.dataset.name}'s PIN? Next time they sign in, the PIN they type becomes their new PIN.`)) return;
+    await api(`/teacher/learners/${b.dataset.reset}/reset-pin`, { method: 'POST' });
+    showClass(c.id);
+  }));
+  app.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
+    if (!confirm(`Remove ${b.dataset.name} and all their answers? This cannot be undone.`)) return;
+    await api(`/teacher/learners/${b.dataset.del}`, { method: 'DELETE' });
+    showClass(c.id);
+  }));
+  $('#lf').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const r = await api(`/teacher/classes/${c.id}/learners`, { method: 'POST', body: { names: $('#names').value } });
+      await showClass(c.id);
+      $('#lMsg').innerHTML = `<div class="msg ok">Added ${r.added.length} learner(s).${r.skipped.length ? ` Already in the class: ${esc(r.skipped.join(', '))}.` : ''}</div>`;
+    } catch (err) { $('#lMsg').innerHTML = `<div class="msg error">${esc(err.message)}</div>`; }
+  };
+}
+
+(token ? showClasses() : Promise.resolve(showLogin())).catch((e) => showLogin(e.message));
+</script>
+</body>
+</html>
