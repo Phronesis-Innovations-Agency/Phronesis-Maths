@@ -34,6 +34,11 @@ async function init() {
     };
     console.log('Database: PostgreSQL (DATABASE_URL)');
   } else {
+    // The embedded database is for local development only: it needs more memory than
+    // a free Render instance has, so production must use a real Postgres (Neon).
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('DATABASE_URL is not set. Add your Neon connection string in Render → Environment, then redeploy.');
+    }
     const { PGlite } = await import('@electric-sql/pglite');
     const dir = process.env.PGLITE_DIR || path.join(__dirname, '..', 'data', 'dev-db');
     fs.mkdirSync(dir, { recursive: true });
