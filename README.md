@@ -65,7 +65,7 @@ npm test
 ## Put it online (free): Neon + Render
 
 1. **Database.** In [Neon](https://neon.tech), create a project and copy the connection string (`postgresql://…`).
-2. **Code.** Push this folder to a new repo in `github.com/Phronesis-Innovationz-Agency` (for example `phronesis-maths`).
+2. **Code.** The code lives at `github.com/Phronesis-Innovations-Agency/Phronesis-Maths`.
 3. **Web service.** In Render: New → Web Service → pick the repo.
    - Build command: `npm install`
    - Start command: `npm start`
