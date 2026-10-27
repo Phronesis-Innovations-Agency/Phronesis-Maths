@@ -1,6 +1,6 @@
 // Service worker: keeps the learner app working with no connection.
 // Bump VERSION whenever the app files change, so phones pick up the new version.
-const VERSION = 'pm-v1';
+const VERSION = 'pm-v2';
 const SHELL = ['/', '/index.html', '/js/check.js', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {

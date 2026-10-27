@@ -334,6 +334,7 @@ async function learnerState(profile) {
  *  Screens
  * ------------------------------------------------------------------ */
 let current = null; // current profile
+let sessionStart = false; // true right after a learner unlocks the app: check for new work once
 
 async function showProfiles() {
   current = null;
@@ -362,6 +363,7 @@ async function openProfile(id) {
   // Ask for the PIN when switching between learners on a shared phone.
   if (profile.locked) return showUnlock(profile);
   current = profile;
+  sessionStart = true;
   showHome();
 }
 
@@ -380,6 +382,7 @@ function showUnlock(profile) {
     // Offline-friendly check: compare against a salted hash saved at login.
     if (profile.pinCheck && profile.pinCheck === (await pinHash(pin, profile.id))) {
       current = profile;
+      sessionStart = true;
       return showHome();
     }
     if (!bundle || !profile.pinCheck) return showPin(profile.code, { id: profile.id, first_name: profile.firstName, has_pin: true }, true);
@@ -547,8 +550,11 @@ async function showHome() {
 
   render(html, p.firstName, (await db.all('profiles')).length > 1 ? () => switchLearner() : null);
   screen = 'home';
-  // Pick up new assignments or questions in the background when online.
-  if (navigator.onLine && Date.now() - (bundle.fetchedAt || 0) > 5 * 60 * 1000) {
+  // Pick up new assignments, questions or an opened end-of-term test in the background when online,
+  // so a learner sees what the teacher just set as soon as they open the app.
+  const refreshDue = sessionStart || Date.now() - (bundle.fetchedAt || 0) > 5 * 60 * 1000;
+  sessionStart = false;
+  if (navigator.onLine && refreshDue) {
     refreshBundle(p)
       .then((b) => { if (b && screen === 'home' && current === p) showHome(); })
       .catch(async (e) => { if (e.status === 401) { p.needsLogin = true; await db.put('profiles', p); } });
